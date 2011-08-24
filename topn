@@ -1,0 +1,74 @@
+#!/usr/bin/perl -wnl
+
+# Reads colum-formatted files and reoutputs the first n unique lines
+# Similar to uniq(1) but will take more than just the top n=1 and allows
+# specifying which fields to group by, by name
+
+# Usage: topn -n 5 -h tid mndoms 
+# For each combination of the columns 'tid' and 'mndoms', prints the first 5 rows
+# The -h is to interpret the first row as a header, allows naming columns
+# Otherwise, 1-based indexing
+
+# Field numbering begins at 1
+# Use negative numbers to start counting from right (-1 downwards). E.g.:
+# cat file.csv | field -s , -- -1 -2 1
+# This uses comma as a separator, then prints the last, 2nd-to-last, first cols
+# The -- is necessary so that the -1 won't be considered a command line option
+
+use strict;
+use Getopt::Long;
+
+# Field indices to select and ouptut
+our @a;
+# Field separator, default (any amount of) whitespace
+our $sep;
+# If header is enabled
+our $header;
+# Default number of uniq lines to print
+our $n;
+BEGIN {
+    GetOptions(
+        "separator|sep|s=s" => \$sep,
+        "header|h" => \$header,
+        "lines|n=i" => \$n,
+    );
+    $sep ||= '\s+';
+    $header = 0 unless defined $header;
+    $n ||= 1;
+    
+    # Read all integers from the command line
+    while(@ARGV) {
+        if ($ARGV[0] =~ /^[\d-]+$/) {
+            # Adjusted for 1-based counting
+            $ARGV[0] -= 1 if $ARGV[0] > 0;
+            push @a, shift;
+        } elsif ($ARGV[0] =~ /^[\d]+\.\.[\d]+$/) {
+            # Allow ranges like 3..5
+            my ($a, $b) = split(/\.\./, shift());
+            ($a, $b) = map { $_ - 1 } ($a, $b);
+            push @a, ($a .. $b);
+        } else {
+            print STDERR "Invalid column number: $ARGV[0]\n";
+        }
+    } 
+}
+
+
+# splits input stream
+my @l = split /$sep/o;
+# Select all fields if none specified
+@a = (0 .. scalar(@l-1)) unless @a;
+
+# Don't consider any columns that doesn't actually exist for this row
+my @b = grep { defined($l[$_]) } @a;
+
+our %counts;
+my $key = join('', map { $l[$_] } @b);
+$counts{$key}++;
+if ($counts{$key} > $n) {
+    #print STDERR "Skipping";
+    next;
+}
+#print STDERR "Here";
+print;
+

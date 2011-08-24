@@ -1,0 +1,60 @@
+#!/usr/bin/perl -wnl
+
+# Reads colum-formatted files and reoutputs requested fields, 
+# possibly reordered
+# Usage: field.pl 3 1 5..7 file.txt 
+# # outputs the 3rd and 1st then 5th 6th 7th cols from file.txt
+# Field numbering begins at 1
+# Use negative numbers to start counting from right (-1 downwards). E.g.:
+# cat file.csv | field -s , -- -1 -2 1
+# This uses comma as a separator, then prints the last, 2nd-to-last, first cols
+# The -- is necessary so that the -1 won't be considered a command line option
+
+use strict;
+use Getopt::Long;
+
+# Field indices to select and ouptu
+our @a;
+# Field separator, default (any amount of) whitespace
+our $sep;
+
+BEGIN {
+    GetOptions("separator|sep|s=s" => \$sep);
+    $sep ||= '\s+';
+    # Read all integers from the command line
+    while(@ARGV) {
+        if ($ARGV[0] =~ /^[\d-]+$/) {
+            # Adjusted for 1-based counting
+            $ARGV[0] -= 1 if $ARGV[0] > 0;
+            push @a, shift;
+        } elsif ($ARGV[0] =~ /^[\d]+\.\.[\d]+$/) {
+            # Allow ranges like 3..5
+            my ($a, $b) = split(/\.\./, shift());
+            ($a, $b) = map { $_ - 1 } ($a, $b);
+            push @a, ($a .. $b);
+        } else {
+            print STDERR "Invalid column number: $ARGV[0]\n";
+        }
+    } 
+}
+
+# Replace undefined with empty string
+sub fix { defined($_[0]) ? $_[0] : "" }
+
+# splits input stream
+my @l = split /$sep/o;
+# Select all fields if none specified
+@a = (0 .. scalar(@l-1)) unless @a;
+
+# Don't consider any columns that doesn't actually exist for this row
+my @b = grep { defined($l[$_]) } @a;
+
+# Put fields back together single-space separated. 
+# See column(1) for a way to get this back into a pretty table format
+# paste(1) is also relevant
+#
+print join(" ", map { fix($l[$_]) } @b);
+
+
+
+
