@@ -1,0 +1,7 @@
+#!/usr/bin/env sh
+
+# Set Gnome 2 desktop background
+
+file=`readlink -f $1`
+gconftool-2 -t str --set /desktop/gnome/background/picture_filename $file
+
