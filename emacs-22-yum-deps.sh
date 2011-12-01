@@ -1,3 +1,6 @@
+# From 
+# http://www.centos.org/modules/newbb/viewtopic.php?topic_id=26353&forum=38
+
 sudo -i
 
 yum -y groupinstall "Development Tools"
