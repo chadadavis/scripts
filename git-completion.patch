@@ -1,0 +1,15 @@
+[1mdiff --git a/git-completion.sh b/git-completion.sh[m
+[1mindex a7d20df..ba68e84 100644[m
+[1m--- a/git-completion.sh[m
+[1m+++ b/git-completion.sh[m
+[36m@@ -550,6 +550,10 @@[m [m__git_tags ()[m
+ # by checkout for tracking branches[m
+ __git_refs ()[m
+ {[m
+[32m+[m	[32mif [ "$(git config --bool bash.onlyHEADs)" == "true" ]; then[m
+[32m+[m[32m        __git_heads[m
+[32m+[m[32m        return[m
+[32m+[m[32m    fi[m
+ 	local i is_hash=y dir="$(__gitdir "${1-}")" track="${2-}"[m
+ 	local cur format refs[m
+ 	_get_comp_words_by_ref -n =: cur[m

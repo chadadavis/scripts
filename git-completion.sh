@@ -550,6 +550,10 @@ __git_tags ()
 # by checkout for tracking branches
 __git_refs ()
 {
+	if [ "$(git config --bool bash.onlyHEADs)" == "true" ]; then
+        __git_heads
+        return
+    fi
 	local i is_hash=y dir="$(__gitdir "${1-}")" track="${2-}"
 	local cur format refs
 	_get_comp_words_by_ref -n =: cur
