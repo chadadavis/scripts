@@ -51,7 +51,7 @@ printf
     "  Non-blank:\t %6d / %6d (%5.2f\%)\n" . 
     "    Docs:\t %6d / %6d (%5.2f\%)\n" .
     "    Comments:\t %6d / %6d (%5.2f\%)\n" . 
-    "    Commands:\t %6d / %6d (%5.2f\%)\n",
+    "    Code:\t %6d / %6d (%5.2f\%)\n",
     $all,
     $blank, $all, 100 * $blank / $all,
     $nonblank, $all, 100 * $nonblank / $all,
