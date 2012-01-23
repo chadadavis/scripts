@@ -48,6 +48,6 @@ echo -e "\n$df"
 
 # Video card name and memory
 echo -e "\nVideo:"
-video=`lspci -v -s 01:00`
+video=`lspci -v | grep 'VGA compatible controller'`
 echo -e "\n$video"
 
