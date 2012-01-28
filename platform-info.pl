@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+# All of this is better to get from 'facter' (part of puppet)
+
 # real hostname
 echo -e "\nReal hostname: "
 hostname=`hostname`
