@@ -1,0 +1,98 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+#    csv / sql query engine
+#    Copyright © 2011 Jeff Epler <jepler@unpythonic.net>
+#
+#    This program is free software; you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation; either version 2 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program; if not, write to the Free Software
+#    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+import csv
+import optparse
+import os
+import sqlite3
+import sys
+
+def sniff(csvfile):
+    return csv.Sniffer().sniff(file(csvfile).read(40960))
+
+def find_columns(csvfile):
+    base, ext = os.path.splitext(csvfile)
+    candidates = [ base + ".cols", os.path.basename(base) + ".cols" ]
+    for c in candidates:
+        if os.path.isfile(c): return c
+    raise SystemExit, "Could not find columns for %r (Tried %s)" % (
+        csvfile, ", ".join(repr(c) for c in candidates))
+
+parser = optparse.OptionParser(usage="%prog [options] csvfile sqlquery")
+parser.add_option("-c", "--columns",
+            help="File specifying columns (default: guess based on input file)",
+            metavar="example.cols", dest="columns")
+parser.add_option("-d", "--in-dialect",
+            help="Dialect of input file (default: autodetected)", 
+            metavar="excel|excel-tab|auto", dest="in_dialect")
+parser.add_option("-D", "--out-dialect",
+            help="Dialect of output file (default: same as input)", 
+            metavar="excel|excel-tab|input", dest="out_dialect")
+parser.set_defaults(columns=None, in_dialect='auto', out_dialect='input')
+options, args = parser.parse_args()
+
+if len(args) != 2:
+    parser.print_help()
+    raise SystemExit
+
+csvfile, sqlquery = args
+
+if options.in_dialect == 'auto':
+    options.in_dialect = sniff(csvfile)
+elif options.in_dialect not in csv.list_dialects():
+    raise SystemExit, "Dialect %r not known" % options.in_dialect
+
+if options.out_dialect == 'input':
+    options.out_dialect = options.in_dialect
+
+if options.columns is None:
+    options.columns = find_columns(csvfile)
+
+csvfile = csv.reader(file(csvfile), options.in_dialect)
+columns = [line.strip() for line in file(options.columns)]
+
+conn = sqlite3.connect(':memory:')
+conn.text_factory = str
+c = conn.cursor()
+c.execute('create table t (' + ','.join(columns) + ')')
+
+toolong = []
+tooshort = []
+params = ','.join('?' * len(columns))
+for row in csvfile:
+    if len(row) < len(columns):
+        tooshort.append(row)
+        row = row + [None] * (len(columns) - len(row))
+    elif len(row) > len(columns):
+        toolong.append(row)
+        row = row[:len(columns)]
+    assert len(row) == len(columns)
+    c.execute('insert into t values (%s)' % params, row)
+
+if tooshort:
+    print >>sys.stderr, "Warning: %d rows were shorter than expected" % len(tooshort)
+    print >>sys.stderr, tooshort[0]
+if toolong:
+    print >>sys.stderr, "Warning: %d rows were longer than expected" % len(toolong)
+    print >>sys.stderr, toolong[0]
+
+writer = csv.writer(sys.stdout, dialect=options.out_dialect)
+
+c.execute(sqlquery)
+for row in c:
+    writer.writerow(row)
