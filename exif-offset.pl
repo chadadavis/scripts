@@ -1,5 +1,7 @@
 #!/usr/bin/env perl
 
+# Notes
+
 use Image::ExifTool qw(:Public);
 use Date::Manip;
 
